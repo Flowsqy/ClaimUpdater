@@ -36,6 +36,7 @@ public class ClaimUpdater {
                 for (int i = 0; i < 50; i++) {
                     if (!entryIterator.hasNext()) {
                         cancel();
+                        actives.remove(manager);
                         return;
                     }
                     final Map.Entry<String, ProtectedRegion> regionEntry = entryIterator.next();
