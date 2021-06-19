@@ -4,7 +4,6 @@ import com.sk89q.worldguard.domains.DefaultDomain;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -40,7 +39,7 @@ public class ClaimUpdater {
                         return;
                     }
                     final Map.Entry<String, ProtectedRegion> regionEntry = entryIterator.next();
-                    if (!updateRegion(manager, regionEntry.getValue())) {
+                    if (!updateRegion(sender, isNotConsole, manager, regionEntry.getValue())) {
                         System.out.println("La region '" + regionEntry.getKey() + "' n'a pas pu être update");
                         if (isNotConsole) {
                             sender.sendMessage("La region '" + regionEntry.getKey() + "' n'a pas pu être update");
@@ -51,7 +50,7 @@ public class ClaimUpdater {
         }.runTaskTimerAsynchronously(JavaPlugin.getPlugin(ClaimUpdaterPlugin.class), 0L, 1L);
     }
 
-    public static boolean updateRegion(RegionManager manager, ProtectedRegion region) {
+    public static boolean updateRegion(CommandSender sender, boolean isNotConsole, RegionManager manager, ProtectedRegion region) {
         Objects.requireNonNull(region);
         final String regionId = region.getId();
         final Set<String> owners = region.getOwners().getPlayers();
@@ -61,13 +60,32 @@ public class ClaimUpdater {
         if (owners.size() != 1) {
             return false;
         }
-        if (!regionId.equalsIgnoreCase(owners.stream().findFirst().get())) {
+        if (!regionId.equals(owners.stream().findFirst().get())) {
             return false;
         }
-        final OfflinePlayer newOwner = Bukkit.getOfflinePlayer(regionId);
-        updateDomain(region.getOwners());
+        final DefaultDomain ownerDomain = region.getOwners();
+        final OfflinePlayer player = OfflinePlayerFinder.getPlayer(regionId, offlinePlayers -> {
+            final StringBuilder builder = new StringBuilder();
+            for (OfflinePlayer p : offlinePlayers) {
+                if (!builder.isEmpty()) {
+                    builder.append(", ");
+                }
+                builder.append(p.getName());
+            }
+            System.out.println("Noms ambigus: " + builder);
+            if (isNotConsole)
+                sender.sendMessage("Noms ambigus: " + builder);
+
+            return null;
+        });
+        if (player == null)
+            return false;
+        final UUID owner = player.getUniqueId();
+        ownerDomain.addPlayer(owner);
+        ownerDomain.removePlayer(regionId);
+        updateDomain(ownerDomain);
         updateDomain(region.getMembers());
-        final ProtectedCuboidRegion newRegion = new ProtectedCuboidRegion("stelyclaim_player_" + newOwner.getUniqueId(), region.getMaximumPoint(), region.getMinimumPoint());
+        final ProtectedCuboidRegion newRegion = new ProtectedCuboidRegion("stelyclaim_player_" + owner, region.getMaximumPoint(), region.getMinimumPoint());
         newRegion.copyFrom(region);
         manager.removeRegion(regionId);
         manager.addRegion(newRegion);
@@ -76,7 +94,10 @@ public class ClaimUpdater {
 
     private static void updateDomain(DefaultDomain domain) {
         for (String player : domain.getPlayers()) {
-            domain.addPlayer(Bukkit.getOfflinePlayer(player).getUniqueId());
+            final OfflinePlayer p = OfflinePlayerFinder.getPlayer(player, o -> null);
+            if (p == null)
+                continue;
+            domain.addPlayer(p.getUniqueId());
         }
         final List<String> names = new ArrayList<>(domain.getPlayers());
         for (String player : names) {
