@@ -7,7 +7,7 @@ public class ClaimUpdaterPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        final PluginCommand command = getCommand("udapte");
+        final PluginCommand command = getCommand("update");
         assert command != null;
         command.setExecutor(new UpdateCommand());
         command.setTabCompleter(new UpdateTab());

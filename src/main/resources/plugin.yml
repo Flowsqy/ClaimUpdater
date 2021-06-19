@@ -2,6 +2,9 @@ name: ClaimUpdater
 author: Flowsqy
 version: "${project.version}"
 main: fr.flowsqy.claimupdater.ClaimUpdaterPlugin
+depend:
+  - WorldEdit
+  - WorldGuard
 commands:
   update:
     permission: claimupdater.update
