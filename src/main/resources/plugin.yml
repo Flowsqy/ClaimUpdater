@@ -2,3 +2,6 @@ name: ClaimUpdater
 author: Flowsqy
 version: "${project.version}"
 main: fr.flowsqy.claimupdater.ClaimUpdaterPlugin
+commands:
+  update:
+    permission: claimupdater.update
