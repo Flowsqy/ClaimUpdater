@@ -78,7 +78,10 @@ public class ClaimUpdater {
         for (String player : domain.getPlayers()) {
             domain.addPlayer(Bukkit.getOfflinePlayer(player).getUniqueId());
         }
-        domain.getPlayers().clear();
+        final List<String> names = new ArrayList<>(domain.getPlayers());
+        for (String player : names) {
+            domain.removePlayer(player);
+        }
     }
 
 }
